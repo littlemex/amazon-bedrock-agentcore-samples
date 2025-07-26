@@ -9,8 +9,8 @@ agents:
       execution_role: arn:aws:iam::320462930492:role/agentcore-strands_claude-role
       account: '320462930492'
       region: us-east-1
-      ecr_repository: 320462930492.dkr.ecr.us-east-1.amazonaws.com/bedrock_agentcore-strands_claude2
-      ecr_auto_create: false
+      ecr_repository: null
+      ecr_auto_create: true
       network_configuration:
         network_mode: PUBLIC
       protocol_configuration:
