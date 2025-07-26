@@ -37,3 +37,9 @@
 * Amazon Bedrock AgentCore ランタイムでのエージェントのホスティング
 * Amazon Bedrockモデルの使用
 * Strands Agentsの使用
+
+### メモ
+
+**変更点**
+
+- Claude 4 -> Claude 3.7
