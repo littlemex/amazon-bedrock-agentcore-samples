@@ -27,14 +27,7 @@ def main():
     print("\nStep 0: Deleting .bedrock_agentcore.yaml file...")
     yaml_path = os.path.join(os.getcwd(), '.bedrock_agentcore.yaml')
     if os.path.exists(yaml_path):
-        # バックアップを作成
-        timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
-        backup_path = f"{yaml_path}.bak-{timestamp}"
         try:
-            shutil.copy2(yaml_path, backup_path)
-            print(f"バックアップを作成しました: {backup_path}")
-            
-            # ファイルを削除
             os.remove(yaml_path)
             print(f"✓ {yaml_path} を削除しました")
         except Exception as e:
@@ -167,12 +160,9 @@ CMD ["opentelemetry-instrument", "python", "mcp_server.py"]
 """)
                 print("✓ Dockerfile.custom created")
         
-        # Backup the original Dockerfile if it exists
+        # バックアップを作成せずに直接上書き
         if os.path.exists("Dockerfile"):
-            timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
-            backup_path = f"Dockerfile.bak-{timestamp}"
-            shutil.copy2("Dockerfile", backup_path)
-            print(f"✓ Original Dockerfile backed up to {backup_path}")
+            print("✓ 既存のDockerfileを上書きします")
         
         # Copy our custom Dockerfile to the standard location
         shutil.copy2("Dockerfile.custom", "Dockerfile")

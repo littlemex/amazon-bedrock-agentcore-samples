@@ -131,7 +131,7 @@ if __name__ == "__main__":
         mcp.run(
             transport="streamable-http",
             host="0.0.0.0",
-            stateless_http=True,  # ステートフルモードに変更
+            stateless_http=True,  # ステートレスモードのまま
             uvicorn_config={
                 "timeout_keep_alive": 600  # Keep-Alive接続のタイムアウト
             }

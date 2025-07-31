@@ -1,6 +1,7 @@
-mcp>=0.1.0
+mcp==1.12.2
 boto3>=1.28.0
-fastmcp>=0.1.0
+fastmcp==v2.10.6
 bedrock-agentcore-starter-toolkit>=0.1.0
 starlette>=0.27.0
 uvicorn>=0.23.0
+aws-opentelemetry-distro>=0.10.0
