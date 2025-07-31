@@ -16,72 +16,7 @@ The SRE Agent is a multi-agent system for Site Reliability Engineers that helps 
 
 ### Use case Architecture 
 
-```mermaid
-graph TB
-    subgraph "User Interface"
-        U["🧑‍💻 SRE Engineer"]
-        CLI["Command Line Interface"]
-        U -->|"Natural Language Query"| CLI
-    end
-
-    subgraph "SRE Agent Core"
-        SUP["🧭 Supervisor Agent<br/>Orchestration & Routing"]
-        K8S["☸️ Kubernetes Agent<br/>Infrastructure Operations"]
-        LOG["📊 Logs Agent<br/>Log Analysis & Search"]
-        MET["📈 Metrics Agent<br/>Performance Monitoring"]
-        RUN["📖 Runbooks Agent<br/>Operational Procedures"]
-        
-        CLI -->|"Query"| SUP
-        SUP -->|"Route"| K8S
-        SUP -->|"Route"| LOG
-        SUP -->|"Route"| MET
-        SUP -->|"Route"| RUN
-    end
-
-    subgraph "AgentCore Gateway"
-        GW["🌉 AgentCore Gateway<br/>MCP Protocol Handler"]
-        AUTH["🔐 Authentication<br/>Token Management"]
-        HEALTH["❤️ Health Monitor<br/>Circuit Breaker"]
-        
-        subgraph "Infrastructure APIs"
-            DK8S["Kubernetes API<br/>:8011"]
-            DLOG["Logs API<br/>:8012"]
-            DMET["Metrics API<br/>:8013"]
-            DRUN["Runbooks API<br/>:8014"]
-        end
-        
-        K8S -.->|"MCP"| GW
-        LOG -.->|"MCP"| GW
-        MET -.->|"MCP"| GW
-        RUN -.->|"MCP"| GW
-        
-        GW --> AUTH
-        GW --> HEALTH
-        GW --> DK8S
-        GW --> DLOG
-        GW --> DMET
-        GW --> DRUN
-    end
-
-    subgraph "Amazon Bedrock"
-        CLAUDE["Claude 4 Sonnet<br/>Large Language Model"]
-        SUP -.->|"LLM Calls"| CLAUDE
-        K8S -.->|"LLM Calls"| CLAUDE
-        LOG -.->|"LLM Calls"| CLAUDE
-        MET -.->|"LLM Calls"| CLAUDE
-        RUN -.->|"LLM Calls"| CLAUDE
-    end
-
-    classDef agent fill:#e1f5fe,stroke:#01579b,stroke-width:2px
-    classDef gateway fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
-    classDef api fill:#e8f5e9,stroke:#1b5e20,stroke-width:2px
-    classDef bedrock fill:#fff3e0,stroke:#e65100,stroke-width:2px
-    
-    class SUP,K8S,LOG,MET,RUN agent
-    class GW,AUTH,HEALTH gateway
-    class DK8S,DLOG,DMET,DRUN api
-    class CLAUDE bedrock
-```
+![SRE support agent with Amazon Bedrock AgentCore](docs/images/sre-agent-architecture.png)
 
 ### Use case key Features
 

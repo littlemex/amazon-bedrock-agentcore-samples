@@ -2,7 +2,7 @@ PyYAML==6.0.2
 requests==2.32.4
 requests-auth-aws-sigv4==0.7
 python-dotenv==1.1.0
-mcp[cli]==1.9.4
+mcp[cli]>=1.10.0
 strands-agents==0.1.8
 ipykernel==6.29.5
 aiohttp==3.12.14
