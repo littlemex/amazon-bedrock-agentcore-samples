@@ -83,7 +83,7 @@ def translate_with_bedrock(text: str, prompt_instruction: str = "", region: str 
     
     # 翻訳プロンプトの作成
     prompt = f"""
-あなたは翻訳の専門家です。以下のテキストを英語から日本語に翻訳してください。
+あなたは翻訳の専門家です。以下のテキストを英語から日本語に翻訳してください。余計な文章を追加したり削除したりせずに元のテキストを日本語に完全に翻訳してください。
 {prompt_instruction}
 
 翻訳するテキスト:
@@ -93,7 +93,8 @@ def translate_with_bedrock(text: str, prompt_instruction: str = "", region: str 
 """
     
     # Claude モデルを使用
-    model_id = "anthropic.claude-3-sonnet-20240229-v1:0"
+    model_id = "us.anthropic.claude-3-7-sonnet-20250219-v1:0"
+
     
     # リクエストボディの作成
     body = json.dumps({
@@ -138,7 +139,7 @@ def translate_ipynb(input_file: str, output_file: str, region: str = "us-east-1"
         region: AWSリージョン
     """
     # 翻訳指示
-    translation_instruction = "半角英数字の前後には半角スペースを挿入する。コードやコマンド、変数名、関数名などの技術的な用語は翻訳せず、そのまま残してください。"
+    translation_instruction = "半角英数字の前後には半角スペースを挿入する。コードやコマンド、変数名、関数名などの技術的な用語は翻訳せず、そのまま残してください。コードブロックはコメント部分以外は絶対に変更しないでください。"
     
     try:
         # ipynbファイルを読み込む

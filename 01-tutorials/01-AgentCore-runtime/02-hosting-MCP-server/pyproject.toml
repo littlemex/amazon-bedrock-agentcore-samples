@@ -1,0 +1,13 @@
+[project]
+name = "02-hosting-mcp-server"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "aiohttp>=3.12.14",
+    "bedrock-agentcore-starter-toolkit>=0.1.2",
+    "boto3>=1.39.14",
+    "fastmcp>=2.10.6",
+    "mcp>=1.12.2",
+]
