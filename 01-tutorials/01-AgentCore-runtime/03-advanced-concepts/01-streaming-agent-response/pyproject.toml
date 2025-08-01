@@ -1,0 +1,14 @@
+[project]
+name = "01-streaming-agent-response"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.10.18"
+dependencies = [
+    "bedrock-agentcore>=0.1.1",
+    "bedrock-agentcore-starter-toolkit>=0.1.2",
+    "boto3>=1.40.0",
+    "strands-agents>=1.2.0",
+    "strands-agents-tools>=0.2.3",
+    "uv>=0.8.4",
+]
