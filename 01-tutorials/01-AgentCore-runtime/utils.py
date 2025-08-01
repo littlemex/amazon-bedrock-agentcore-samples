@@ -237,16 +237,18 @@ def create_agentcore_role(agent_name):
                 "Resource": "*"
             },
             {
-            "Effect": "Allow",
-            "Action": [
-                "xray:PutTraceSegments",
-                "xray:PutTelemetryRecords",
-                "xray:GetSamplingRules",
-                "xray:GetSamplingTargets",
-                "xray:GetSamplingStatisticSummaries"
+                "Effect": "Allow",
+                "Action": [
+                    "logs:CreateLogGroup",
+                    "logs:CreateLogStream",
+                    "logs:PutLogEvents"
                 ],
-             "Resource": [ "*" ]
-             },
+                "Resource": [
+                    f"arn:aws:logs:{region}:{account_id}:log-group:/aws/bedrock-agentcore/runtimes/*:log-stream:*",
+                    f"arn:aws:logs:{region}:{account_id}:log-group:agents/mcp-server-logs:*",
+                    f"arn:aws:logs:{region}:{account_id}:log-group:/aws/bedrock-agentcore/runtimes/*:*"
+                ]
+            },
              {
                 "Effect": "Allow",
                 "Resource": "*",
@@ -279,8 +281,25 @@ def create_agentcore_role(agent_name):
                     "logs:PutLogEvents"
                 ],
                 "Resource": [
-                    f"arn:aws:logs:{region}:{account_id}:log-group:aws/spans:*"
+                    f"arn:aws:logs:{region}:{account_id}:log-group:aws/spans:*",
+                    f"arn:aws:logs:{region}:{account_id}:log-group:aws/otel/traces:*",
+                    f"arn:aws:logs:{region}:{account_id}:log-group:/aws/application-signals/data:*"
                 ]
+            },
+            {
+                "Sid": "OTELPermissions",
+                "Effect": "Allow",
+                "Action": [
+                    "xray:PutTraceSegments",
+                    "xray:PutTelemetryRecords",
+                    "xray:GetSamplingRules",
+                    "xray:GetSamplingTargets",
+                    "xray:GetSamplingStatisticSummaries",
+                    "xray:GetTraceSegmentDestination",
+                    "xray:UpdateTraceSegmentDestination",
+                    "xray:UpdateIndexingRule"
+                ],
+                "Resource": "*"
             },
             {
                 "Sid": "SSMParametersAccess",

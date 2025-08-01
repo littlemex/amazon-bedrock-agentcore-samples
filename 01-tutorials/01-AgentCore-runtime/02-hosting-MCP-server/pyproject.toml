@@ -11,7 +11,6 @@ dependencies = [
     "boto3>=1.28.0",
     "fastapi>=0.116.1",
     "fastmcp==2.10.6",
-    "mcp==1.12.2",
     "ruff>=0.3.0",
     "starlette>=0.27.0",
     "uvicorn>=0.23.0",
