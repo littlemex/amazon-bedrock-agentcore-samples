@@ -1,0 +1,18 @@
+[project]
+name = "04-outbound-auth-example"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.10.18"
+dependencies = [
+    "strands-agents[litellm]>=0.1.0",
+    "strands-agents-tools>=0.1.0",
+    "uv>=0.8.4",
+    "starlette>=0.47.2",
+    "uvicorn>=0.35.0",
+    "aws-opentelemetry-distro-genai-beta>=0.1.6",
+    "setuptools>=80.9.0",
+    "bedrock-agentcore>=0.1.0",
+    "boto3>=1.28.0",
+    "botocore>=1.31.0",
+]
