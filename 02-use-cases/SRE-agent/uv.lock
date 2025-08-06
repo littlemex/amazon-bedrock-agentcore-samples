@@ -140,7 +140,7 @@ wheels = [
 
 [[package]]
 name = "aws-opentelemetry-distro"
-version = "0.10.0"
+version = "0.10.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "opentelemetry-api" },
@@ -201,7 +201,7 @@ dependencies = [
     { name = "opentelemetry-sdk-extension-aws" },
 ]
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/f8/bb/1f85f78fedd24a7dcc038eb4b7e30ee1b0b71acae03d6075171c917e0cce/aws_opentelemetry_distro-0.10.0-py3-none-any.whl", hash = "sha256:102edd8a6fcf059bd9bb97aa8bfb3053097b01e690bbc56a81840f07c30e0ff2", size = 98899, upload-time = "2025-07-14T23:31:42.245Z" },
+    { url = "https://files.pythonhosted.org/packages/5d/a6/0fe2e6af029a6a616dd3a364884c43398a65ae35cb0cc68c960c326e672a/aws_opentelemetry_distro-0.10.1-py3-none-any.whl", hash = "sha256:cbc17ae57ab260b1e93db918e45de8c4ad6582c45761d03c50c0efbd258ced5c", size = 99770, upload-time = "2025-07-28T16:08:20.145Z" },
 ]
 
 [[package]]
@@ -2823,7 +2823,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "anthropic", specifier = ">=0.57.1" },
-    { name = "aws-opentelemetry-distro", specifier = "==0.10.0" },
+    { name = "aws-opentelemetry-distro", specifier = "~=0.10.1" },
     { name = "awscli", specifier = "==1.41.7" },
     { name = "bandit", marker = "extra == 'dev'", specifier = ">=1.7.0" },
     { name = "bedrock-agentcore", specifier = "==0.1.0" },
