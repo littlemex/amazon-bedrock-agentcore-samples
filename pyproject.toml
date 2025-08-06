@@ -1,0 +1,38 @@
+[project]
+name = "amazon-bedrock-agentcore-samples"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "strands-agents[litellm]>=1.2.0",
+    "strands-agents-tools>=0.2.3",
+    "uv>=0.8.4",
+    "boto3>=1.40.0",
+    "langchain[aws]>=0.3.27",
+    "langgraph>=0.6.2",
+    "langsmith[otel]>=0.4.9",
+    "duckduckgo-search>=8.1.1",
+    "langchain-community>=0.3.27",
+    "opentelemetry-instrumentation-langchain>=0.43.1",
+    "bedrock-agentcore>=0.1.1",
+    "bedrock-agentcore-starter-toolkit>=0.1.2",
+    "ipython>=8.37.0",
+    "ipykernel>=6.30.0",
+    "pandas>=2.3.1",
+    "jupyterlab>=4.4.5",
+    "openpyxl>=3.1.5",
+]
+
+[tool.uv.workspace]
+members = [
+    "01-tutorials/01-AgentCore-runtime/03-advanced-concepts/01-streaming-agent-response",
+    "01-tutorials/01-AgentCore-runtime/03-advanced-concepts/02-understanding-runtime-context",
+    "01-tutorials/01-AgentCore-runtime/03-advanced-concepts/03-handling-large-payloads",
+    "01-tutorials/02-AgentCore-gateway/03-search-tools",
+    "01-tutorials/03-AgentCore-identity/03-Inbound-Auth-example",
+    "01-tutorials/03-AgentCore-identity/04-Outbound-Auth-example",
+    "01-tutorials/04-AgentCore-memory/01-short-term-memory/01-single-agent/with-langgraph-agent",
+    "01-tutorials/04-AgentCore-memory/01-short-term-memory/02-multi-agent/with-strands-agent",
+    "01-tutorials/04-AgentCore-memory/02-long-term-memory/01-single-agent/using-strands-agent-memory-tool",
+]

@@ -1,224 +1,228 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-
 import json
 import re
 import os
 import argparse
 import boto3
-import time
-from typing import Dict, List, Any, Tuple
+from typing import List, Tuple
 
-def extract_comments(code: str) -> Tuple[List[Tuple[str, str]], str]:
-    """
-    コードからコメントを抽出し、コメントとその位置情報のリストを返す
+def clean_translation_output(text: str) -> str:
+    """翻訳出力から余分な文字列を除去"""
+    # 翻訳プロンプトの残骸を除去
+    patterns_to_remove = [
+        r'^(日本語訳:|翻訳:|Translation:|Japanese:|訳:)\s*',
+        r'日本語訳:\s*$',
+        r'以下.*翻訳.*です[：:]\s*',
+        r'翻訳結果[：:]\s*',
+    ]
     
-    Args:
-        code: Pythonコード
-        
-    Returns:
-        コメントとその位置情報のリスト、コメントを除去したコード
-    """
-    # 複数行コメントを抽出 (""" """)
-    multiline_comments = []
-    pattern = r'(""".*?""")'
-    matches = re.finditer(pattern, code, re.DOTALL)
+    result = text.strip()
+    for pattern in patterns_to_remove:
+        result = re.sub(pattern, '', result, flags=re.MULTILINE)
     
-    # コメントとその位置を記録
+    return result.strip()
+
+def is_already_japanese(text: str) -> bool:
+    """テキストが既に日本語かどうかを判定"""
+    # ひらがな、カタカナ、漢字の割合をチェック
+    japanese_chars = len(re.findall(r'[ひ-ゖヲ-ヺ一-龯]', text))
+    total_chars = len(re.sub(r'\s', '', text))
+    
+    if total_chars == 0:
+        return False
+    
+    japanese_ratio = japanese_chars / total_chars
+    return japanese_ratio > 0.3  # 30%以上が日本語文字なら日本語と判定
+
+def extract_code_strings(code: str) -> Tuple[List[Tuple[str, str]], str]:
+    """コードから翻訳対象の文字列のみを抽出"""
     positions = []
-    for match in matches:
-        start, end = match.span()
-        comment = match.group(1)
-        positions.append((comment, f"MULTILINE_COMMENT_{len(positions)}"))
-        
-    # 複数行コメントをプレースホルダーに置き換え
-    for comment, placeholder in positions:
-        code = code.replace(comment, placeholder)
-    
-    # 単一行コメントを抽出 (# で始まる行)
-    lines = code.split('\n')
-    for i, line in enumerate(lines):
-        # コメント部分を抽出
-        comment_match = re.search(r'(#.*)$', line)
-        if comment_match:
-            comment = comment_match.group(1)
-            placeholder = f"INLINE_COMMENT_{len(positions)}"
-            positions.append((comment, placeholder))
-            lines[i] = line.replace(comment, placeholder)
-    
-    # コメントを除去したコードを再構築
-    code_without_comments = '\n'.join(lines)
-    
-    return positions, code_without_comments
-
-def restore_comments(code: str, translated_comments: List[Tuple[str, str]]) -> str:
-    """
-    翻訳されたコメントをコードに戻す
-    
-    Args:
-        code: コメントがプレースホルダーに置き換えられたコード
-        translated_comments: 翻訳されたコメントとプレースホルダーのリスト
-        
-    Returns:
-        コメントが復元されたコード
-    """
     result = code
-    for comment, placeholder in translated_comments:
-        result = result.replace(placeholder, comment)
-    return result
-
-def translate_with_bedrock(text: str, prompt_instruction: str = "", region: str = "us-east-1") -> str:
-    """
-    Amazon Bedrockを使用してテキストを翻訳する
     
-    Args:
-        text: 翻訳するテキスト
-        prompt_instruction: 翻訳時の追加指示
-        region: AWSリージョン
-        
-    Returns:
-        翻訳されたテキスト
-    """
+    # より厳密な文字列パターン
+    patterns = [
+        (r'("""[^"]*?""")', 'DOCSTRING'),  # docstring
+        (r"('''[^']*?''')", 'DOCSTRING'),  # docstring
+        (r'("[^"\n]{6,}?")', 'STRING'),    # 6文字以上の文字列
+        (r"('[^'\n]{6,}?')", 'STRING'),    # 6文字以上の文字列
+    ]
+    
+    for pattern, string_type in patterns:
+        matches = list(re.finditer(pattern, result, re.DOTALL))
+        for match in reversed(matches):
+            full_match = match.group(1)
+            
+            # 文字列の内容を取得
+            if full_match.startswith(('"""', "'''")):
+                inner_content = full_match[3:-3]
+            else:
+                inner_content = full_match[1:-1]
+            
+            # 翻訳すべき文字列かどうかを判定
+            if should_translate_string(inner_content):
+                placeholder = f"TRANSLATE_{string_type}_{len(positions)}"
+                positions.append((full_match, placeholder))
+                result = result[:match.start()] + placeholder + result[match.end():]
+    
+    return positions, result
+
+def should_translate_string(content: str) -> bool:
+    """文字列が翻訳対象かどうかを判定"""
+    content = content.strip()
+    
+    # 除外条件
+    if (len(content) < 6 or  # 短すぎる
+        is_already_japanese(content) or  # 既に日本語
+        re.match(r'^[a-zA-Z0-9_.-]+$', content) or  # 識別子
+        content.startswith(('http', 'www', 'ftp', '/', './', '../')) or  # URL/パス
+        re.match(r'^[A-Z_][A-Z0-9_]*$', content) or  # 定数
+        content.startswith('%') or  # フォーマット文字列
+        content.count('{') > 2 or  # 複雑なフォーマット
+        not re.search(r'[a-zA-Z]', content)):  # 英字を含まない
+        return False
+    
+    return True
+
+def translate_with_bedrock(text: str, region: str = "us-east-1") -> str:
+    """Bedrockで翻訳（シンプルなプロンプト）"""
+    if is_already_japanese(text):
+        return text
+    
     bedrock_runtime = boto3.client(service_name='bedrock-runtime', region_name=region)
     
-    # 翻訳プロンプトの作成
-    prompt = f"""
-あなたは翻訳の専門家です。以下のテキストを英語から日本語に翻訳してください。余計な文章を追加したり削除したりせずに元のテキストを日本語に完全に翻訳してください。
-{prompt_instruction}
+    # 最小限のプロンプト
+    prompt = f"""Translate the following English text to natural Japanese. Only output the translation, no explanations.
+    コードブロックについてはコメント部分以外は決して変更してはなりません。例外として、自然言語でなんらかのプロンプトや指示を与える箇所のみ日本語に翻訳してください。
 
-翻訳するテキスト:
-{text}
-
-日本語訳:
-"""
+English: {text}
+Japanese:"""
     
-    # Claude モデルを使用
     model_id = "us.anthropic.claude-3-7-sonnet-20250219-v1:0"
-
     
-    # リクエストボディの作成
     body = json.dumps({
         "anthropic_version": "bedrock-2023-05-31",
-        "max_tokens": 4096,
+        "max_tokens": 2048,
         "temperature": 0.1,
-        "messages": [
-            {
-                "role": "user",
-                "content": prompt
-            }
-        ]
+        "messages": [{"role": "user", "content": prompt}]
     })
     
     try:
-        # モデル呼び出し
-        response = bedrock_runtime.invoke_model(
-            modelId=model_id,
-            body=body
-        )
-        
-        # レスポンスの解析
+        response = bedrock_runtime.invoke_model(modelId=model_id, body=body)
         response_body = json.loads(response.get('body').read())
-        translated_text = response_body['content'][0]['text']
+        translated = response_body['content'][0]['text']
         
-        # 余分な「日本語訳:」などの文字列を削除
-        translated_text = re.sub(r'^(日本語訳:|翻訳:|Translation:)\s*', '', translated_text)
+        # 出力をクリーンアップ
+        cleaned = clean_translation_output(translated)
+        return cleaned if cleaned else text
         
-        return translated_text.strip()
     except Exception as e:
         print(f"翻訳エラー: {e}")
-        # エラーの場合は元のテキストを返す
         return text
 
 def translate_ipynb(input_file: str, output_file: str, region: str = "us-east-1") -> None:
-    """
-    ipynbファイルを翻訳する
-    
-    Args:
-        input_file: 入力ipynbファイルのパス
-        output_file: 出力ipynbファイルのパス
-        region: AWSリージョン
-    """
-    # 翻訳指示
-    translation_instruction = "半角英数字の前後には半角スペースを挿入する。コードやコマンド、変数名、関数名などの技術的な用語は翻訳せず、そのまま残してください。コードブロックはコメント部分以外は絶対に変更しないでください。"
-    
+    """ipynbファイルを翻訳"""
     try:
-        # ipynbファイルを読み込む
         with open(input_file, 'r', encoding='utf-8') as f:
             notebook = json.load(f)
         
-        # 各セルを処理
-        for cell in notebook['cells']:
+        for i, cell in enumerate(notebook['cells']):
             cell_type = cell['cell_type']
+            source = ''.join(cell['source']) if cell['source'] else ""
+            
+            if not source.strip():
+                continue
+            
+            print(f"セル {i+1} ({cell_type}) を処理中...")
             
             if cell_type == 'markdown':
-                # マークダウンセルの場合は全文を翻訳
-                source = ''.join(cell['source'])
-                
-                # 空のセルはスキップ
-                if not source.strip():
-                    continue
-                
-                print(f"マークダウンセルを翻訳中...")
-                translated_source = translate_with_bedrock(source, translation_instruction, region)
-                
-                # 翻訳結果を行のリストに変換して戻す
-                cell['source'] = [translated_source]
-                
+                # マークダウンセルは既に日本語でなければ翻訳
+                if not is_already_japanese(source):
+                    # コードブロックを保護
+                    protected_source = source
+                    code_blocks = []
+                    
+                    def protect_code(match):
+                        code_blocks.append(match.group(0))
+                        return f"PROTECTED_CODE_{len(code_blocks)-1}"
+                    
+                    protected_source = re.sub(r'```.*?```', protect_code, protected_source, flags=re.DOTALL)
+                    
+                    # 翻訳
+                    translated = translate_with_bedrock(protected_source, region)
+                    
+                    # コードブロックを復元
+                    for j, code_block in enumerate(code_blocks):
+                        translated = translated.replace(f"PROTECTED_CODE_{j}", code_block)
+                    
+                    cell['source'] = [translated]
+                    print(f"  → マークダウンを翻訳しました")
+                else:
+                    print(f"  → 既に日本語のためスキップ")
+                    
             elif cell_type == 'code':
-                # コードセルの場合はコメントのみを翻訳
-                source = ''.join(cell['source'])
+                # コードセルは文字列リテラルのみ翻訳
+                translatable_strings, code_without_strings = extract_code_strings(source)
                 
-                # 空のセルはスキップ
-                if not source.strip():
-                    continue
-                
-                # コメントを抽出
-                comments, code_without_comments = extract_comments(source)
-                
-                if comments:
-                    print(f"コードセル内のコメントを翻訳中...")
-                    translated_comments = []
+                if translatable_strings:
+                    print(f"  → {len(translatable_strings)}個の文字列を翻訳中...")
+                    translated_strings = []
                     
-                    for comment, placeholder in comments:
-                        # コメント内容を翻訳
-                        translated_comment = translate_with_bedrock(comment, translation_instruction, region)
-                        translated_comments.append((translated_comment, placeholder))
+                    for string_content, placeholder in translatable_strings:
+                        # 文字列の種類に応じて処理
+                        if string_content.startswith('"""'):
+                            inner = string_content[3:-3]
+                            translated_inner = translate_with_bedrock(inner, region)
+                            translated_strings.append(('"""' + translated_inner + '"""', placeholder))
+                        elif string_content.startswith("'''"):
+                            inner = string_content[3:-3]
+                            translated_inner = translate_with_bedrock(inner, region)
+                            translated_strings.append(("'''" + translated_inner + "'''", placeholder))
+                        elif string_content.startswith('"'):
+                            inner = string_content[1:-1]
+                            translated_inner = translate_with_bedrock(inner, region)
+                            translated_strings.append(('"' + translated_inner + '"', placeholder))
+                        elif string_content.startswith("'"):
+                            inner = string_content[1:-1]
+                            translated_inner = translate_with_bedrock(inner, region)
+                            translated_strings.append(("'" + translated_inner + "'", placeholder))
                     
-                    # 翻訳したコメントをコードに戻す
-                    translated_source = restore_comments(code_without_comments, translated_comments)
+                    # 翻訳された文字列を復元
+                    final_code = code_without_strings
+                    for translated_string, placeholder in translated_strings:
+                        final_code = final_code.replace(placeholder, translated_string)
                     
-                    # 翻訳結果を行のリストに変換して戻す
-                    cell['source'] = [translated_source]
+                    cell['source'] = [final_code]
+                    print(f"  → コード内文字列を翻訳しました")
+                else:
+                    print(f"  → 翻訳対象の文字列なし")
         
-        # 翻訳結果を保存
+        # 結果を保存
         with open(output_file, 'w', encoding='utf-8') as f:
             json.dump(notebook, f, ensure_ascii=False, indent=1)
-            
-        print(f"翻訳完了: {output_file}")
+        
+        print(f"\n✅ 翻訳完了: {output_file}")
         
     except Exception as e:
-        print(f"エラー: {e}")
+        print(f"❌ エラー: {e}")
+        import traceback
+        traceback.print_exc()
 
 def main():
-    parser = argparse.ArgumentParser(description='ipynbファイルを日本語に翻訳するスクリプト')
-    parser.add_argument('input_file', help='入力ipynbファイルのパス')
-    parser.add_argument('--output_file', help='出力ipynbファイルのパス（指定しない場合は入力ファイル名.ja.ipynbになります）')
-    parser.add_argument('--region', default='us-east-1', help='AWSリージョン（デフォルト: us-east-1）')
+    parser = argparse.ArgumentParser(description='ipynbファイル翻訳ツール（最終版）')
+    parser.add_argument('input_file', help='入力ipynbファイル')
+    parser.add_argument('--output_file', help='出力ipynbファイル')
+    parser.add_argument('--region', default='us-east-1', help='AWSリージョン')
     
     args = parser.parse_args()
     
-    input_file = args.input_file
-    region = args.region
-    
-    # 出力ファイル名が指定されていない場合は自動生成
     if args.output_file:
         output_file = args.output_file
     else:
-        # 拡張子の前に.jaを追加
-        base, ext = os.path.splitext(input_file)
+        base, ext = os.path.splitext(args.input_file)
         output_file = f"{base}.ja{ext}"
     
-    translate_ipynb(input_file, output_file, region)
+    translate_ipynb(args.input_file, output_file, args.region)
 
 if __name__ == "__main__":
     main()
