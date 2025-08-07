@@ -4,4 +4,3 @@ strands-agents[otel]
 ddgs
 boto3
 botocore
-
