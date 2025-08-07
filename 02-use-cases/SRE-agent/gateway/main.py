@@ -12,7 +12,7 @@ import json
 import logging
 import time
 from pathlib import Path
-from typing import Dict, Any
+from typing import Any, Dict
 
 import boto3
 from botocore.config import Config
@@ -33,10 +33,10 @@ logging.basicConfig(
 def _extract_account_id_from_arn(arn: str) -> str:
     """
     Extract AWS account ID from an ARN.
-    
+
     Args:
         arn: AWS ARN string
-        
+
     Returns:
         Account ID extracted from ARN
     """
@@ -66,20 +66,17 @@ def _create_agentcore_client(region: str, endpoint_url: str) -> Any:
     """
     # Custom retry configuration with increased attempts and timeout
     retry_config = Config(
-        retries={
-            'max_attempts': 20,
-            'mode': 'adaptive'
-        },
+        retries={"max_attempts": 20, "mode": "adaptive"},
         connect_timeout=60,
-        read_timeout=60
+        read_timeout=60,
     )
-    
+
     try:
         client = boto3.client(
-            "bedrock-agentcore-control", 
-            region_name=region, 
+            "bedrock-agentcore-control",
+            region_name=region,
             endpoint_url=endpoint_url,
-            config=retry_config
+            config=retry_config,
         )
         logging.info(f"Created AgentCore client for region {region}")
         return client
@@ -253,9 +250,11 @@ def _delete_gateway(client: Any, gateway_id: str) -> None:
 
         if logging.getLogger().isEnabledFor(logging.DEBUG):
             logging.debug(f"Gateway delete response: {delete_response}")
-        
+
         # Wait for deletion to propagate
-        logging.info(f"Waiting {GATEWAY_DELETION_PROPAGATION_DELAY} seconds for deletion to propagate...")
+        logging.info(
+            f"Waiting {GATEWAY_DELETION_PROPAGATION_DELAY} seconds for deletion to propagate..."
+        )
         time.sleep(GATEWAY_DELETION_PROPAGATION_DELAY)
     except ClientError as e:
         logging.error(f"Failed to delete gateway {gateway_id}: {e}")
@@ -317,7 +316,7 @@ def create_gateway(
             authorizerConfiguration=auth_config,
             protocolConfiguration=protocol_configuration,
             description=description,
-            exceptionLevel='DEBUG'
+            exceptionLevel="DEBUG",
         )
         logging.info(f"Created gateway: {response.get('gatewayId')}")
         return response
@@ -585,7 +584,7 @@ def main():
     existing_gateway_id = _check_gateway_exists(client, args.gateway_name)
     if existing_gateway_id:
         if args.delete_gateway_if_exists:
-            logging.info(f"Deleting existing gateway before creating new one")
+            logging.info("Deleting existing gateway before creating new one")
             _delete_gateway(client, existing_gateway_id)
         else:
             logging.warning(
@@ -596,7 +595,7 @@ def main():
             )
             print(f"❌ Gateway '{args.gateway_name}' already exists")
             print(f"   Gateway ID: {existing_gateway_id}")
-            print(f"   Use --delete-gateway-if-exists flag to delete and recreate")
+            print("   Use --delete-gateway-if-exists flag to delete and recreate")
             exit(1)
 
     # Create gateway
@@ -627,7 +626,9 @@ def main():
     # Check if observability was requested
     if args.enable_observability:
         logging.error("Observability feature is not yet supported")
-        print("\n❌ Error: The --enable-observability feature is currently not supported but will be available soon.")
+        print(
+            "\n❌ Error: The --enable-observability feature is currently not supported but will be available soon."
+        )
         print("   Please run the command without the --enable-observability flag.")
         exit(1)
 
@@ -666,14 +667,14 @@ def main():
                 s3_uri.split("/")[-1].replace(".yaml", "").replace(".json", "")
             )
             if not target_name or target_name == s3_uri:
-                target_name = f"target-{i+1}"
+                target_name = f"target-{i + 1}"
 
             # Replace underscores with hyphens to meet AWS naming requirements
             # AWS requires: ([0-9a-zA-Z][-]?){1,100}
             target_name = target_name.replace("_", "-")
 
             logging.info(
-                f"Creating S3 OpenAPI target {i+1}/{len(s3_uris)}: {target_name}"
+                f"Creating S3 OpenAPI target {i + 1}/{len(s3_uris)}: {target_name}"
             )
             s3_response = create_s3_target(
                 client=client,
@@ -686,7 +687,7 @@ def main():
             s3_responses.append(s3_response)
 
             if args.output_json:
-                print(f"\nS3 Target {i+1} Creation:")
+                print(f"\nS3 Target {i + 1} Creation:")
                 print(json.dumps(s3_response, indent=2, default=str))
 
         if not args.output_json:
